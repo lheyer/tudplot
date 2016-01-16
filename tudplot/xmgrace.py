@@ -11,11 +11,14 @@ def indexed(list, default=None):
             return default
     return index
 
-# Linestyles in xmgrace: None are styles that are by default
-# not defined in matplotlib (longer dashes and double dots)
-# First entry should always be None, since index starts at 1
-agr_linestyles = ['None', '-', ':', '--', None, '-.', None, None, None]
-agr_markers = ['None', 'o', 's', 'd', '^', '<', 'v', '>', '+', 'x', '*']
+agr_attr_lists = {
+    # Linestyles in xmgrace: None are styles that are by default
+    # not defined in matplotlib (longer dashes and double dots)
+    # First entry should always be None, since index starts at 1
+    'linestyle': ['None', '-', ':', '--', None, '-.', None, None, None],
+    'marker': ['None', 'o', 's', 'd', '^', '<', 'v', '>', '+', 'x', '*']
+}
+
 
 # dict of line attributes:
 # value describes the type of the attribute:
@@ -31,11 +34,11 @@ agr_line_attrs = {
     'linewidth': {'type': 'value', 'fmt': 'line {attr} {value}'},
     'color': {'type': 'index map', 'fmt': 'line {attr} {value}'},
     'marker': {'type': 'index', 'fmt': 'symbol {value}'},
-    'markerfacecolor': {'type': 'index map', 'maplist': 'agr_colors', 'fmt': 'symbol color {value}'}
+    'markerfacecolor': {'type': 'index map', 'maplist': 'color', 'fmt': 'symbol color {value}'}
 }
 agr_axis_attrs = {
-    'legend': {'type': 'static', 'fmt': 'on'},
-    'title': {'type': 'value', 'fmt': 'title {value}'},
+    #'legend': {'type': 'static', 'fmt': 'legend on'},
+    'title': {'type': 'value', 'fmt': 'title "{value}"'},
     'xlabel': {'type': 'value', 'fmt': 'xaxis label "{value}"'},
     'ylabel': {'type': 'value', 'fmt': 'yaxis label "{value}"'},
 
@@ -71,13 +74,29 @@ class AgrFile:
             file.write(self.body)
             file.write(self.tail)
 
+patterns = {
+    '\$': '',
+    r'\^({.+}|.)': r'\S\1\N',
+    r'\_({.+}|.)': r'\s\1\N',
+}
+
+# Greek letters in xmgrace are written by switching to symbol-font:
+# "\x a\f{}" will print an alpha an switch back to normal font
+greek = {
+    'alpha': 'a', 'beta': 'b', 'gamma': 'g', 'delta': 'd', 'epsilon': 'e', 'zeta': 'z',
+    'eta': 'h', 'theta': 'q', 'iota': 'i', 'kappa': 'k',  'lambda': 'l',  'mu': 'm',
+    'nu': 'n', 'xi': 'x', 'omicron': 'o', 'pi': 'p', 'rho': 'r', 'sigma': 's',
+    'tau': 't', 'upsilon': 'u', 'phi': 'f', 'chi': 'c', 'psi': 'y', 'omega': 'w',
+    'varphi': 'j', 'varepsilon': 'e', 'vartheta': 'J', 'varrho': 'r'
+}
+for latex, xmg in greek.items():
+    patt = r'\\{}'.format(latex)
+    repl = r'\\x {}\\f{{}}'.format(xmg)
+    patterns[patt] = repl
+
 
 def latex_to_xmgrace(string):
-    patterns = {
-        '\$': '',
-        r'\^({.+}|.)': r'\S\1\N',
-        r'\_({.+}|.)': r'\s\1\N',
-    }
+
     for patt, repl in patterns.items():
         string = re.sub(patt, repl, string)
 
@@ -94,7 +113,8 @@ def process_attributes(attrs, source, agr, prefix=''):
             if is_string_like(value):
                 value = latex_to_xmgrace(value)
         if 'index' in attr_type:
-            attr_list = eval(attr_dict.get('maplist', 'agr_{}s'.format(attr)))
+            attr_list = agr_attr_lists[attr_dict.get('maplist', attr)]
+            #eval(attr_dict.get('maplist', 'agr_{}s'.format(attr)))
             index = indexed(attr_list)(value)
             if index is None:
                 if 'map' in attr_type:
@@ -113,7 +133,8 @@ def export_to_agr(figure, filename):
     """
     cc = ColorConverter()
     agr = AgrFile()
-    agr_colors = ['white', 'black']
+    agr_attr_lists['color'] = ['white', 'black']
+    # agr_colors =
 
     for i, axis in enumerate(figure.axes):
 
@@ -134,7 +155,7 @@ def export_to_agr(figure, filename):
             agr.writedata(line.get_xydata())
 
     agr.indent = 0
-    for i, color in enumerate(agr_colors):
+    for i, color in enumerate(agr_attr_lists['color']):
         rgb_tuple = tuple(int(255 * c) for c in cc.to_rgba_array(color)[0, :3])
         agr.writeline('map color {index} to {rgb}, "{color}"',
                       part='head', index=i, rgb=rgb_tuple, color=color)

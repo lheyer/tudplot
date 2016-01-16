@@ -17,7 +17,7 @@ sns.reset_defaults()
 sns.set_palette(sns.color_palette(colorsb, len(colorsb)), len(colorsb))
 sns.set_style({'font.family': 'Charter',
                'lines.linewidth': 1.5,
-               'lines.markeredgesize': 5,
+               'lines.markeredgewidth': 1,
                'lines.markersize': 6,
                'figure.figsize': (6, 4)})
 small_palette = sns.color_palette([colorsb[0], colorsb[8], colorsb[10],

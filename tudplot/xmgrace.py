@@ -29,7 +29,8 @@ agr_attr_lists = {
 agr_line_attrs = {
     'hidden': {'type': 'static', 'fmt': 'hidden false'},
     'type': {'type': 'static', 'fmt': 'type xy'},
-    'label': {'type': 'value', 'fmt': 'legend "{value}"'},
+    'label': {'type': 'value', 'fmt': 'legend "{value}"',
+              'condition': lambda lbl: re.search('_line\d+', lbl) is None},
     'linestyle': {'type': 'index', 'fmt': 'line {attr} {value}'},
     'linewidth': {'type': 'value', 'fmt': 'line {attr} {value}'},
     'color': {'type': 'index map', 'fmt': 'line {attr} {value}'},
@@ -110,19 +111,21 @@ def process_attributes(attrs, source, agr, prefix=''):
             value = ''
         else:
             value = getattr(source, 'get_{}'.format(attr))()
+            if 'condition' in attr_dict:
+                if not attr_dict['condition'](value):
+                    return
             if is_string_like(value):
                 value = latex_to_xmgrace(value)
-        if 'index' in attr_type:
-            attr_list = agr_attr_lists[attr_dict.get('maplist', attr)]
-            #eval(attr_dict.get('maplist', 'agr_{}s'.format(attr)))
-            index = indexed(attr_list)(value)
-            if index is None:
-                if 'map' in attr_type:
-                    attr_list.append(value)
-                    index = attr_list.index(value)
-                else:
-                    index = 1
-            value = index
+            if 'index' in attr_type:
+                attr_list = agr_attr_lists[attr_dict.get('maplist', attr)]
+                index = indexed(attr_list)(value)
+                if index is None:
+                    if 'map' in attr_type:
+                        attr_list.append(value)
+                        index = attr_list.index(value)
+                    else:
+                        index = 1
+                value = index
 
         agr.writeline(prefix + attr_dict['fmt'], attr=attr, value=value)
 

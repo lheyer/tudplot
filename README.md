@@ -6,7 +6,7 @@ A package for matplotlib plotting in the corporate style of the TU Darmstadt.
 
 Install dependencies:
 
-* Python 3
+* Python 3.5
 * matplotlib
 * seaborn
 

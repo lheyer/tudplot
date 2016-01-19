@@ -113,7 +113,7 @@ def process_attributes(attrs, source, agr, prefix=''):
             value = getattr(source, 'get_{}'.format(attr))()
             if 'condition' in attr_dict:
                 if not attr_dict['condition'](value):
-                    return
+                    continue
             if is_string_like(value):
                 value = latex_to_xmgrace(value)
             if 'index' in attr_type:

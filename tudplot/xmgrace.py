@@ -42,6 +42,10 @@ agr_axis_attrs = {
     'title': {'type': 'value', 'fmt': 'title "{value}"'},
     'xlabel': {'type': 'value', 'fmt': 'xaxis label "{value}"'},
     'ylabel': {'type': 'value', 'fmt': 'yaxis label "{value}"'},
+    'xscale': {'type': 'value', 'fmt': 'xaxes scale Logarithmic',
+               'condition': lambda scale: scale is 'log'},
+    'yscale': {'type': 'value', 'fmt': 'yaxes scale Logarithmic',
+               'condition': lambda scale: scale is 'log'},
 
 }
 

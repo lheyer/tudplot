@@ -11,6 +11,25 @@ def indexed(list, default=None):
             return default
     return index
 
+
+def get_world(line):
+    xmin, xmax = line.get_xlim()
+    ymin, ymax = line.get_ylim()
+    return '{}, {}, {}, {}'.format(xmin, ymin, xmax, ymax)
+
+
+def get_major_ticks(dim):
+    def get_major_dticks(axis):
+        ticks = getattr(axis, 'get_{}ticks'.format(dim))()
+        scale = getattr(axis, 'get_{}scale'.format(dim))()
+        if scale is 'log':
+            value = (ticks[1:] / ticks[:-1]).mean()
+        else:
+            value = (ticks[1:] - ticks[:-1]).mean()
+
+        return value
+
+    return get_major_dticks
 agr_attr_lists = {
     # Linestyles in xmgrace: None are styles that are by default
     # not defined in matplotlib (longer dashes and double dots)
@@ -38,7 +57,7 @@ agr_line_attrs = {
     'markerfacecolor': {'type': 'index map', 'maplist': 'color', 'fmt': 'symbol color {value}'}
 }
 agr_axis_attrs = {
-    #'legend': {'type': 'static', 'fmt': 'legend on'},
+    'world': {'type': 'function', 'function': get_world, 'fmt': 'world {value}'},
     'title': {'type': 'value', 'fmt': 'title "{value}"'},
     'xlabel': {'type': 'value', 'fmt': 'xaxis label "{value}"'},
     'ylabel': {'type': 'value', 'fmt': 'yaxis label "{value}"'},
@@ -46,6 +65,10 @@ agr_axis_attrs = {
                'condition': lambda scale: scale is 'log'},
     'yscale': {'type': 'value', 'fmt': 'yaxes scale Logarithmic',
                'condition': lambda scale: scale is 'log'},
+    'xticks': {'type': 'function', 'fmt': 'xaxis tick major {value}',
+               'function': get_major_ticks('x')},
+    'yticks': {'type': 'function', 'fmt': 'yaxis tick major {value}',
+               'function': get_major_ticks('y')},
 
 }
 
@@ -57,7 +80,8 @@ xmgrace_mapping = {
 
 
 class AgrFile:
-    head = body = tail = ''
+    head = '@version 50125\n'
+    body = tail = ''
     indent = 0
     kwargs = {}
 
@@ -113,6 +137,8 @@ def process_attributes(attrs, source, agr, prefix=''):
         attr_type = attr_dict['type']
         if 'static' in attr_type:
             value = ''
+        elif 'function' in attr_type:
+            value = attr_dict['function'](source)
         else:
             value = getattr(source, 'get_{}'.format(attr))()
             if 'condition' in attr_dict:
@@ -163,8 +189,9 @@ def export_to_agr(figure, filename):
 
     agr.indent = 0
     for i, color in enumerate(agr_attr_lists['color']):
-        rgb_tuple = tuple(int(255 * c) for c in cc.to_rgba_array(color)[0, :3])
-        agr.writeline('map color {index} to {rgb}, "{color}"',
-                      part='head', index=i, rgb=rgb_tuple, color=color)
+        if color is not 'none':
+            rgb_tuple = tuple(int(255 * c) for c in cc.to_rgba_array(color)[0, :3])
+            agr.writeline('map color {index} to {rgb}, "{color}"',
+                          part='head', index=i, rgb=rgb_tuple, color=color)
 
     agr.save(filename)

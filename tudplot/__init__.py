@@ -1,8 +1,6 @@
 import matplotlib
 from matplotlib import pyplot
-from .xmgrace import export_to_agr
-
-matplotlib.use('Agg')
+from .xmgrace import export_to_agr, load_agr_data
 
 # Official TUD Colors
 tudcolors = {
@@ -25,27 +23,24 @@ tudstyle = {
 }
 
 
-def activate(scheme='b', full=True):
+def activate(scheme='b', full=False, **kwargs):
     """
-    Activate a figure schems of the tud design.
+    Activate the tud design.
 
     Args:
         scheme (opt.): Color scheme to activate, default is 'b'.
-        small (opt.):
+        full (opt.):
             Activate the full color palette. If False a smaller color palette is used.
+        **kwargs: Any matplotlib rc paramter may be given as keyword argument.
     """
     import seaborn as sns
     sns.reset_defaults()
     if full:
         colors = tudcolors[scheme]
     else:
-        colors = [tudcolors[scheme][i] for i in [0, 8, 10, 3, 6]]
+        colors = [tudcolors[scheme][i] for i in [1, 8, 3, 9, 6, 2]]
     sns.set_palette(sns.color_palette(colors, len(colors)), len(colors))
-    sns.set_style(tudstyle)
-    # small_palette=sns.color_palette([colorsb[0], colorsb[8], colorsb[10],
-    #                                   colorsb[3], colorsb[6]], 5)
-    # full_palette=sns.color_palette(colorsc, len(colorsb))
-# matplotlib.rcParams['markeredgecolor']  = 'none'
+    sns.set_style({**tudstyle, **kwargs})
 
 
 def saveagr(filename, figure=None):
@@ -59,3 +54,22 @@ def saveagr(filename, figure=None):
     """
     figure = figure or pyplot.gcf()
     export_to_agr(figure, filename)
+
+
+def markfigure(x, y, s, **kwargs):
+    from matplotlib import rcParams
+    
+    kwargs['transform'] = pyplot.gca().transAxes
+    kwargs['ha'] = 'center'
+    kwargs['va'] = 'center'
+    kwargs['fontsize'] = rcParams['font.size']*1.25
+
+    pyplot.text(x, y, s, **kwargs)
+
+
+def marka(x, y):
+    markfigure(x, y, '(a)')
+
+
+def markb(x, y):
+    markfigure(x, y, '(b)')

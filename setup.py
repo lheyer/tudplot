@@ -6,6 +6,6 @@ setup(
     author_email='niels.mueller@physik.tu-darmstadt.de',
 
     packages=['tudplot', ],
-    version='1.0.0',
+    version='0.1',
     requires=['matplotlib', 'seaborn'],
 )

@@ -216,11 +216,11 @@ def load_agr_data(agrfile):
                     graphs[graph_id] = {}
                 cur_graph = graphs[graph_id]
             elif 'legend' in line and cur_graph is not None:
-                ma = re.search('([sS]\d) .+ "(.*)"', org_line)
+                ma = re.search('([sS]\d+) .+ "(.*)"', org_line)
                 if ma is not None:
                     cur_graph[ma.group(1).lower()] = {'label': ma.group(2)}
             elif '@target' in line:
-                ma = re.search('(g\d)\.(s\d)', line.lower())
+                ma = re.search('(g\d+)\.(s\d+)', line.lower())
                 gid = ma.group(1)
                 sid = ma.group(2)
                 target = []

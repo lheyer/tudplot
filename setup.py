@@ -8,4 +8,5 @@ setup(
     packages=['tudplot', ],
     version='0.1',
     requires=['matplotlib', 'seaborn'],
+    zip_safe=False,
 )

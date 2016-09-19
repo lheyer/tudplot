@@ -1,9 +1,40 @@
 
 import re
+from collections import OrderedDict
 
 from matplotlib.colors import ColorConverter
 from matplotlib.cbook import is_string_like
 import numpy as np
+
+from .tud import tudcolors
+
+
+patterns = OrderedDict()
+patterns['\$'] = ''
+patterns[r'\\mathtt{(.+)}'] = r'\1'
+patterns[r'\^({.+}|.)'] = r'\S\1\N'
+patterns[r'\_({.+}|.)'] = r'\s\1\N'
+
+# Greek letters in xmgrace are written by switching to symbol-font:
+# "\x a\f{}" will print an alpha and switch back to normal font
+greek = {
+    'alpha': 'a', 'beta': 'b', 'gamma': 'g', 'delta': 'd', 'epsilon': 'e', 'zeta': 'z',
+    'eta': 'h', 'theta': 'q', 'iota': 'i', 'kappa': 'k',  'lambda': 'l',  'mu': 'm',
+    'nu': 'n', 'xi': 'x', 'omicron': 'o', 'pi': 'p', 'rho': 'r', 'sigma': 's',
+    'tau': 't', 'upsilon': 'u', 'phi': 'f', 'chi': 'c', 'psi': 'y', 'omega': 'w',
+    'varphi': 'j', 'varepsilon': 'e', 'vartheta': 'J', 'varrho': 'r'
+}
+for latex, xmg in greek.items():
+    patt = r'\\{}'.format(latex)
+    repl = r'\\x {}\\f{{{{}}}}'.format(xmg)
+    patterns[patt] = repl
+
+
+def latex_to_xmgrace(string):
+
+    for patt, repl in patterns.items():
+        string = re.sub(patt, repl, string)
+    return string
 
 
 def indexed(list, default=None):

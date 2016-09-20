@@ -12,8 +12,10 @@ from .tud import tudcolors
 patterns = OrderedDict()
 patterns['\$'] = ''
 patterns[r'\\mathtt{(.+)}'] = r'\1'
-patterns[r'\^({.+}|.)'] = r'\S\1\N'
-patterns[r'\_({.+}|.)'] = r'\s\1\N'
+patterns[r'\^([^{])'] = r'\s\1\N'
+patterns[r'\^{(.+)}'] = r'\s\1\N'
+patterns[r'\_([^{])'] = r'\s\1\N'
+patterns[r'\_{(.+)}'] = r'\s\1\N'
 
 # Greek letters in xmgrace are written by switching to symbol-font:
 # "\x a\f{}" will print an alpha and switch back to normal font

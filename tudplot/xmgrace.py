@@ -358,32 +358,40 @@ def load_agr_data(agrfile):
     cur_graph = None
     target = None
     with open(agrfile, 'r') as f:
-        for org_line in f.readlines():
-            line = org_line.lower()
-            if '@with' in line:
-                graph_id = line.split()[1]
-                if graph_id not in graphs:
-                    graphs[graph_id] = {}
-                cur_graph = graphs[graph_id]
-            elif 'legend' in line and cur_graph is not None:
-                ma = re.search('([sS]\d+) .+ "(.*)"', org_line)
-                if ma is not None:
-                    cur_graph[ma.group(1).lower()] = {'label': ma.group(2)}
-            elif '@target' in line:
-                ma = re.search('(g\d+)\.(s\d+)', line.lower())
-                gid = ma.group(1)
-                sid = ma.group(2)
-                target = []
-                if sid not in graphs[gid]:
-                    print('Target {}.{} has no label.'.format(gid, sid))
-                    continue
-                graphs[gid][sid]['data'] = target
-            elif target is not None and '@type' in line:
+        lines = []
+        line = True
+        while line:
+            try:
+                line = f.readline()
+                lines.append(line)
+            except UnicodeDecodeError:
+                pass
+    for org_line in lines:
+        line = org_line.lower()
+        if '@with' in line:
+            graph_id = line.split()[1]
+            if graph_id not in graphs:
+                graphs[graph_id] = {}
+            cur_graph = graphs[graph_id]
+        elif 'legend' in line and cur_graph is not None:
+            ma = re.search('([sS]\d+) .+ "(.*)"', org_line)
+            if ma is not None:
+                cur_graph[ma.group(1).lower()] = {'label': ma.group(2)}
+        elif '@target' in line:
+            ma = re.search('(g\d+)\.(s\d+)', line.lower())
+            gid = ma.group(1)
+            sid = ma.group(2)
+            target = []
+            if sid not in graphs[gid]:
+                print('Target {}.{} has no label.'.format(gid, sid))
                 continue
-            elif '&' in line:
-                target = None
-            elif target is not None:
-                target.append([float(d) for d in line.split()])
+            graphs[gid][sid]['data'] = target
+        elif target is not None and '@type' in line:
+            continue
+        elif '&' in line:
+            target = None
+        elif target is not None:
+            target.append([float(d) for d in line.split()])
 
     data = {}
     for _, graph in graphs.items():

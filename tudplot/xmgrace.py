@@ -11,11 +11,9 @@ from .tud import tudcolors
 
 patterns = OrderedDict()
 patterns['\$'] = ''
-patterns[r'\\mathtt{(.+)}'] = r'\1'
-patterns[r'\^([^{])'] = r'\s\1\N'
-patterns[r'\^{(.+)}'] = r'\s\1\N'
-patterns[r'\_([^{])'] = r'\s\1\N'
-patterns[r'\_{(.+)}'] = r'\s\1\N'
+patterns[r'\\math(?:tt|sf|it)({.+})'] = r'\1'
+patterns[r'\^({.+}|.)'] = r'\s\1\N'
+patterns[r'\_({.+}|.)'] = r'\s\1\N'
 
 # Greek letters in xmgrace are written by switching to symbol-font:
 # "\x a\f{}" will print an alpha and switch back to normal font
@@ -31,11 +29,15 @@ for latex, xmg in greek.items():
     repl = r'\\x {}\\f{{{{}}}}'.format(xmg)
     patterns[patt] = repl
 
+# Remove any left over latex groups as the last step
+patterns[r'[{}]'] = ''
 
 def latex_to_xmgrace(string):
-
     for patt, repl in patterns.items():
-        string = re.sub(patt, repl, string)
+        new = re.sub(patt, repl, string)
+        if new != string:
+            print('{} -> {}; ({})'.format(string, new, patt))
+        string = new
     return string
 
 

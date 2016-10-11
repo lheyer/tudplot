@@ -4,10 +4,9 @@ import numpy
 import matplotlib as mpl
 from matplotlib import pyplot
 from cycler import cycler
-# from matplotlib.colors import LinearSegmentedColormap
 
 from .xmgrace import export_to_agr, load_agr_data
-from .tud import tudstyle, tudcolors
+from .tud import tudcolors
 
 
 def activate(scheme='b', full=False, **kwargs):
@@ -36,7 +35,6 @@ def activate(scheme='b', full=False, **kwargs):
     mpl.rcParams['axes.prop_cycle'] = cycler('color', colors)
 
 
-
 def saveagr(filename, figure=None):
     """
     Save the current figure in xmgrace format.
@@ -55,7 +53,6 @@ def markfigure(x, y, s, **kwargs):
     kwargs['ha'] = 'center'
     kwargs['va'] = 'center'
     kwargs.setdefault('fontsize', 'large')
-
     pyplot.text(x, y, s, **kwargs)
 
 

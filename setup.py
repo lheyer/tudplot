@@ -7,6 +7,7 @@ setup(
 
     packages=['tudplot', ],
     version='0.1',
-    requires=['matplotlib', 'seaborn'],
+    requires=['matplotlib'],
+    package_data={'tudplot': ['tud.mplstyle']},
     zip_safe=False,
 )

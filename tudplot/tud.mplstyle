@@ -1,0 +1,5 @@
+font.family: Charter
+lines.linewidth: 1.5
+lines.markeredgewidth: 1.5
+lines.markersize: 6
+markers.fillstyle: none

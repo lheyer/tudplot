@@ -9,11 +9,3 @@ tudcolors = {
     'd': ('#243572', '#004E73', '#00715E', '#6A8B22', '#99A604', '#AE8E00',
           '#BE6F00', '#A94913', '#961C26', '#732054', '#4C226A'),
 }
-tudstyle = {
-    'font.family': 'Charter',
-    'lines.linewidth': 1.5,
-    'lines.markeredgewidth': 1.5,
-    'lines.markersize': 6,
-    'figure.figsize': (6, 4),
-    'markers.fillstyle': 'none',
-}

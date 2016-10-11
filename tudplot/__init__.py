@@ -1,6 +1,9 @@
+import os
+
 import numpy
 import matplotlib as mpl
 from matplotlib import pyplot
+from cycler import cycler
 # from matplotlib.colors import LinearSegmentedColormap
 
 from .xmgrace import export_to_agr, load_agr_data
@@ -19,8 +22,8 @@ def activate(scheme='b', full=False, **kwargs):
             all tudcolors.
         **kwargs: Any matplotlib rc paramter may be given as keyword argument.
     """
-    import seaborn as sns
-    sns.reset_defaults()
+    mpl.pyplot.style.use(os.path.join(os.path.dirname(__file__), 'tud.mplstyle'))
+
     if full:
         if isinstance(full, int):
             cmap = mpl.colors.LinearSegmentedColormap.from_list('tud{}'.format(scheme),
@@ -30,8 +33,8 @@ def activate(scheme='b', full=False, **kwargs):
             colors = tudcolors[scheme]
     else:
         colors = [tudcolors[scheme][i] for i in [1, 8, 3, 9, 6, 2]]
-    sns.set_palette(sns.color_palette(colors, len(colors)), len(colors))
-    sns.set_style({**tudstyle, **kwargs})
+    mpl.rcParams['axes.prop_cycle'] = cycler('color', colors)
+
 
 
 def saveagr(filename, figure=None):

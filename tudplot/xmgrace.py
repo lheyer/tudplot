@@ -359,15 +359,8 @@ def load_agr_data(agrfile):
     graphs = {}
     cur_graph = None
     target = None
-    with open(agrfile, 'r') as f:
-        lines = []
-        line = True
-        while line:
-            try:
-                line = f.readline()
-                lines.append(line)
-            except UnicodeDecodeError:
-                pass
+    with open(agrfile, 'r', errors='replace') as f:
+        lines = f.readlines()
     for org_line in lines:
         line = org_line.lower()
         if '@with' in line:

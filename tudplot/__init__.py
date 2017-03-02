@@ -6,10 +6,10 @@ from matplotlib import pyplot
 from cycler import cycler
 
 from .xmgrace import export_to_agr, load_agr_data
-from .tud import tudcolors
+from .tud import tudcolors, nominal_colors, sequentiell_colors
 
 
-def activate(scheme='b', full=False, **kwargs):
+def activate(scheme='b', full=False, sequentiell=False, **kwargs):
     """
     Activate the tud design.
 
@@ -30,12 +30,15 @@ def activate(scheme='b', full=False, **kwargs):
             colors = cmap(numpy.linspace(0, 1, full))
         else:
             colors = tudcolors[scheme]
+    elif sequentiell:
+        colors = sequentiell_colors(sequentiell, scheme=scheme)
     else:
-        colors = [tudcolors[scheme][i] for i in [1, 8, 3, 9, 6, 2]]
+        colors = nominal_colors[scheme]
+
     mpl.rcParams['axes.prop_cycle'] = cycler('color', colors)
 
 
-def saveagr(filename, figure=None):
+def saveagr(filename, figure=None, convert_latex=True):
     """
     Save the current figure in xmgrace format.
 
@@ -45,7 +48,7 @@ def saveagr(filename, figure=None):
             Figure that will be saved, if not given the current figure is saved
     """
     figure = figure or pyplot.gcf()
-    export_to_agr(figure, filename)
+    export_to_agr(figure, filename, convert_latex=convert_latex)
 
 
 def markfigure(x, y, s, **kwargs):

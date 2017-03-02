@@ -1,44 +1,13 @@
 
 import re
-from collections import OrderedDict
+import logging
 
 from matplotlib.colors import ColorConverter
 from matplotlib.cbook import is_string_like
 import numpy as np
 
 from .tud import tudcolors
-
-
-patterns = OrderedDict()
-patterns['\$'] = ''
-patterns[r'\\math(?:tt|sf|it)({.+})'] = r'\1'
-patterns[r'\^({.+}|.)'] = r'\s\1\N'
-patterns[r'\_({.+}|.)'] = r'\s\1\N'
-
-# Greek letters in xmgrace are written by switching to symbol-font:
-# "\x a\f{}" will print an alpha and switch back to normal font
-greek = {
-    'alpha': 'a', 'beta': 'b', 'gamma': 'g', 'delta': 'd', 'epsilon': 'e', 'zeta': 'z',
-    'eta': 'h', 'theta': 'q', 'iota': 'i', 'kappa': 'k',  'lambda': 'l',  'mu': 'm',
-    'nu': 'n', 'xi': 'x', 'omicron': 'o', 'pi': 'p', 'rho': 'r', 'sigma': 's',
-    'tau': 't', 'upsilon': 'u', 'phi': 'f', 'chi': 'c', 'psi': 'y', 'omega': 'w',
-    'varphi': 'j', 'varepsilon': 'e', 'vartheta': 'J', 'varrho': 'r'
-}
-for latex, xmg in greek.items():
-    patt = r'\\{}'.format(latex)
-    repl = r'\\x {}\\f{{{{}}}}'.format(xmg)
-    patterns[patt] = repl
-
-# Remove any left over latex groups as the last step
-patterns[r'[{}]'] = ''
-
-def latex_to_xmgrace(string):
-    for patt, repl in patterns.items():
-        new = re.sub(patt, repl, string)
-        if new != string:
-            print('{} -> {}; ({})'.format(string, new, patt))
-        string = new
-    return string
+from .tex2grace import latex_to_xmgrace
 
 
 def indexed(list, default=None):
@@ -131,7 +100,7 @@ class StaticAttribute:
         self.key = key
         self.fmt = fmt
 
-    def format(self, source=None):
+    def format(self, source=None, **kwargs):
         """
         Return the (formatted) string of the attribute.
 
@@ -152,13 +121,15 @@ class ValueAttribute(StaticAttribute):
         'color': ['white', 'black'],
     }
 
-    def _get_value(self, source):
+    def _get_value(self, source, convert_latex=True):
         value = getattr(source, 'get_{}'.format(self.key))()
         if is_string_like(value):
-            value = latex_to_xmgrace(value)
+            if convert_latex:
+                value = latex_to_xmgrace(value)
+            else:
+                value = value.replace(r'{}', r'{{}}').replace('{{{}}}', '{{}}')
             if not self.index:
                 value = '"{}"'.format(value)
-
         return value
 
     def __init__(self, *args, index=None, function=None, condition=None):
@@ -183,11 +154,11 @@ class ValueAttribute(StaticAttribute):
             self.index = False
 
         if function is not None:
-            self._get_value = function
+            self._get_value = lambda x, **kwargs: function(x)
         self.condition = condition or (lambda x: True)
 
-    def format(self, source):
-        value = self._get_value(source)
+    def format(self, source, convert_latex=True, **kwargs):
+        value = self._get_value(source, convert_latex=convert_latex)
         if not self.condition(value):
             return None
         if self.index:
@@ -201,6 +172,7 @@ class ValueAttribute(StaticAttribute):
                     print('index not found:', value, index, attr_list)
                     index = 1
             value = index
+        logging.debug('fmt: {}, value: {}'.format(self.fmt, value))
         return ' '.join([self.fmt, str(value)])
 
 agr_line_attrs = [
@@ -227,8 +199,8 @@ agr_axis_attrs = [
     ValueAttribute('xticks', 'xaxis tick major', function=get_major_ticks('x')),
     ValueAttribute('yticks', 'yaxis tick major', function=get_major_ticks('y')),
     ValueAttribute('legend', 'legend', function=get_legend),
-    StaticAttribute('legend', 'legend loctype world'),
-    ValueAttribute('legend', 'legend', function=get_legend_position)
+    # StaticAttribute('legend', 'legend loctype world'),
+    # ValueAttribute('legend', 'legend', function=get_legend_position)
 ]
 
 agr_text_attrs = [
@@ -248,6 +220,7 @@ class AgrFile:
     def writeline(self, text, part='body', **kwargs):
         self.kwargs = {**self.kwargs, **kwargs}
         content = getattr(self, part)
+
         content += '@' + ' ' * self.indent + text.format(**self.kwargs) + '\n'
         setattr(self, part, content)
 
@@ -292,14 +265,14 @@ def _process_attributes(attrs, source, agr, prefix=''):
         agr.writeline(prefix + attr_dict['fmt'], attr=attr, value=value)
 
 
-def process_attributes(attrs, source, agr, prefix=''):
+def process_attributes(attrs, source, agr, prefix='', **kwargs):
     for attr in attrs:
-        fmt = attr.format(source)
+        fmt = attr.format(source, **kwargs)
         if fmt is not None:
             agr.writeline(prefix + fmt)
 
 
-def export_to_agr(figure, filename):
+def export_to_agr(figure, filename, **kwargs):
     """
     Export a matplotlib figure to xmgrace format.
     """
@@ -320,18 +293,18 @@ def export_to_agr(figure, filename):
         agr.writeline('with {axis}')
         agr.indent = 4
 
-        process_attributes(agr_axis_attrs, axis, agr)
+        process_attributes(agr_axis_attrs, axis, agr, **kwargs)
 
         for j, line in enumerate(axis.lines):
             agr.kwargs['line'] = 's{}'.format(j)
-            process_attributes(agr_line_attrs, line, agr, '{line} ')
+            process_attributes(agr_line_attrs, line, agr, '{line} ', **kwargs)
             agr.writedata(line.get_xydata())
 
         for text in axis.texts:
             agr.indent = 0
             agr.writeline('with string')
             agr.indent = 4
-            process_attributes(agr_text_attrs, text, agr, 'string ')
+            process_attributes(agr_text_attrs, text, agr, 'string ', **kwargs)
 
     agr.indent = 0
     tudcol_rev = {}

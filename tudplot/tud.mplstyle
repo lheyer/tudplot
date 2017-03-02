@@ -1,5 +1,7 @@
 font.family: Charter
+font.size: 16
 lines.linewidth: 1.5
 lines.markeredgewidth: 1.5
 lines.markersize: 6
 markers.fillstyle: none
+figure.figsize: 8, 6

@@ -4,28 +4,33 @@ A package for matplotlib plotting in the corporate style of the TU Darmstadt.
 
 ## Installation
 
-Install dependencies:
+Make sure dependencies are installed:
 
-* Python 3.5
-* matplotlib
-* seaborn
+*   Python 3.5
+*   matplotlib
+*   numpy
 
-In the source directory run:
+Then in the source directory run:
 
     python3 setup.py install
 
 ## Usage
 
-The package changes the plotting style on import.
-Therefore it is used by simply importing it in the python script:
+Use the function `activate` to activate TU styled plotting:
 
     import tudplot
+    tudplot.activate()
 
-TUDPlot also comes with a very basic exporter, to save matplotlib figures as xmgrace agr file.
-In this example, matplotlib is imported as mpl:
+A call with no arguments will activate a nominal color range of 6 distinct TU colors.
+One can specify the keyword `full` to enable a range of continuous colors from the full TU color spectrum.
 
-    fig = mpl.figure()
+    tudplot.activate(full=10)
+
+TUDPlot also comes with a basic exporter `saveagr`, to save the current matplotlib figure in xmgrace agr format.
+
+    from matplotlib import pyplot as plt
+    fig = plt.figure()
     fig.plot([1,2,3], label='Test')
     # Do more plotting here...
-    # When the figre is complete:
-    tudplot.export_to_agr(fig, 'test.agr')
+    # When the figure is complete:
+    tudplot.saveagr('test.agr')

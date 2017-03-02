@@ -1,3 +1,5 @@
+import matplotlib as mpl
+import numpy
 
 tudcolors = {
     'a': ('#5D85C3', '#009CDA', '#50B695', '#AFCC50', '#DDDF48', '#FFE05C',
@@ -9,3 +11,16 @@ tudcolors = {
     'd': ('#243572', '#004E73', '#00715E', '#6A8B22', '#99A604', '#AE8E00',
           '#BE6F00', '#A94913', '#961C26', '#732054', '#4C226A'),
 }
+
+
+nominal_colors = {scheme: [tudcolors[scheme][i] for i in [1, 8, 3, 9, 6, 2]] for scheme in tudcolors}
+
+
+def full_colors(N, scheme='b'):
+    cmap = mpl.colors.LinearSegmentedColormap.from_list('tud{}'.format(scheme), tudcolors[scheme])
+    return ['#{:02x}{:02x}{:02x}'.format(*cmap(x, bytes=True)[:3]) for x in numpy.linspace(0, 1, N)]
+
+
+def sequentiell_colors(N, scheme='b'):
+    cmap = mpl.colors.LinearSegmentedColormap.from_list('tud_h{}'.format(scheme), [tudcolors[scheme][i] for i in (0, 8)])
+    return ['#{:02x}{:02x}{:02x}'.format(*cmap(x, bytes=True)[:3]) for x in numpy.linspace(0, 1, N)]

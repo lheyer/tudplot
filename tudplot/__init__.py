@@ -6,10 +6,10 @@ from matplotlib import pyplot
 from cycler import cycler
 
 from .xmgrace import export_to_agr, load_agr_data
-from .tud import tudcolors, nominal_colors, sequentiell_colors
+from .tud import tudcolors, nominal_colors, sequential_colors
 
 
-def activate(scheme='b', full=False, sequentiell=False, **kwargs):
+def activate(scheme='b', full=False, sequential=False, cmap='blue-red', **kwargs):
     """
     Activate the tud design.
 
@@ -19,6 +19,10 @@ def activate(scheme='b', full=False, sequentiell=False, **kwargs):
             Activate the full color palette. If False a smaller color palette is used.
             If a number N is given, N colors will be chosen based on a interpolation of
             all tudcolors.
+        sequential (opt.): Activate a number of sequential colors from a color map.
+        cmap (opt.):
+            Colormap to use for sequential colors, can be either from `~tudplot.tud.cmaps`
+            or any matplotlib color map.
         **kwargs: Any matplotlib rc paramter may be given as keyword argument.
     """
     mpl.pyplot.style.use(os.path.join(os.path.dirname(__file__), 'tud.mplstyle'))
@@ -30,8 +34,8 @@ def activate(scheme='b', full=False, sequentiell=False, **kwargs):
             colors = cmap(numpy.linspace(0, 1, full))
         else:
             colors = tudcolors[scheme]
-    elif sequentiell:
-        colors = sequentiell_colors(sequentiell, scheme=scheme)
+    elif sequential:
+        colors = sequential_colors(sequential, cmap=cmap)
     else:
         colors = nominal_colors[scheme]
 

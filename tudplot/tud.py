@@ -12,8 +12,17 @@ tudcolors = {
           '#BE6F00', '#A94913', '#961C26', '#732054', '#4C226A'),
 }
 
+# Store each color value in the dict as defined in the Style-Guide (e.g. tud9c)
+tudcolors.update({'tud{}{}'.format(i + 1, s): col for s in tudcolors for i, col in enumerate(tudcolors[s])})
 
-nominal_colors = {scheme: [tudcolors[scheme][i] for i in [1, 8, 3, 9, 6, 2]] for scheme in tudcolors}
+color_maps = {
+    'blue-red': (tudcolors['tud1b'], tudcolors['tud9b']),
+    'black-green': ('black', tudcolors['tud5c']),
+    'violett-green': (tudcolors['tud11c'], tudcolors['tud5b'])
+}
+
+
+nominal_colors = {scheme: [tudcolors[scheme][i] for i in [1, 8, 3, 9, 6, 2]] for scheme in 'abcd'}
 
 
 def full_colors(N, scheme='b'):
@@ -21,6 +30,9 @@ def full_colors(N, scheme='b'):
     return ['#{:02x}{:02x}{:02x}'.format(*cmap(x, bytes=True)[:3]) for x in numpy.linspace(0, 1, N)]
 
 
-def sequentiell_colors(N, scheme='b'):
-    cmap = mpl.colors.LinearSegmentedColormap.from_list('tud_h{}'.format(scheme), [tudcolors[scheme][i] for i in (0, 8)])
+def sequential_colors(N, cmap='blue-red'):
+    if cmap in color_maps:
+        cmap = mpl.colors.LinearSegmentedColormap.from_list('tud_{}'.format(cmap), color_maps[cmap])
+    else:
+        cmap = mpl.pyplot.get_cmap(cmap)
     return ['#{:02x}{:02x}{:02x}'.format(*cmap(x, bytes=True)[:3]) for x in numpy.linspace(0, 1, N)]

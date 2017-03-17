@@ -1,6 +1,7 @@
 
 import re
 import logging
+from collections import OrderedDict
 
 from matplotlib.colors import ColorConverter
 from matplotlib.cbook import is_string_like
@@ -329,7 +330,7 @@ def load_agr_data(agrfile):
     """
     Load all named data sets from an agrfile.
     """
-    graphs = {}
+    graphs = OrderedDict()
     cur_graph = None
     target = None
     with open(agrfile, 'r', errors='replace') as f:
@@ -344,15 +345,19 @@ def load_agr_data(agrfile):
         elif 'legend' in line and cur_graph is not None:
             ma = re.search('([sS]\d+) .+ "(.*)"', org_line)
             if ma is not None:
-                cur_graph[ma.group(1).lower()] = {'label': ma.group(2)}
+                label = ma.group(2)
+                sid = ma.group(1).lower()
+                if label == '':
+                    gid = [k for k, v in graphs.items() if v is cur_graph][0]
+                    label = '{}.{}'.format(gid, sid)
+                cur_graph[sid] = {'label': label}
         elif '@target' in line:
             ma = re.search('(g\d+)\.(s\d+)', line.lower())
             gid = ma.group(1)
             sid = ma.group(2)
             target = []
             if sid not in graphs[gid]:
-                print('Target {}.{} has no label.'.format(gid, sid))
-                continue
+                graphs[gid][sid] = {'label': '{}.{}'.format(gid, sid)}
             graphs[gid][sid]['data'] = target
         elif target is not None and '@type' in line:
             continue
@@ -361,7 +366,7 @@ def load_agr_data(agrfile):
         elif target is not None:
             target.append([float(d) for d in line.split()])
 
-    data = {}
+    data = OrderedDict()
     for _, graph in graphs.items():
         for _, set in graph.items():
             if 'data' in set:

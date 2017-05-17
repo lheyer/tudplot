@@ -309,10 +309,10 @@ def export_to_agr(figure, filename, **kwargs):
 
     agr.indent = 0
     tudcol_rev = {}
-    for style, colors in tudcolors.items():
-        for i, col in enumerate(colors):
-            rgba, = cc.to_rgba_array(col)
-            tudcol_rev[tuple(rgba)] = 'tud{}{}'.format(i, style)
+    for name, color in tudcolors.items():
+        if isinstance(color, str):
+            rgba, = cc.to_rgba_array(color)
+            tudcol_rev[tuple(rgba)] = name           
 
     for i, color in enumerate(ValueAttribute.attr_lists['color']):
         # print(i, color)

@@ -13,19 +13,26 @@ from .tex2grace import latex_to_xmgrace
 
 def indexed(list, default=None):
     def index(arg):
-        if arg in list:
-            return list.index(arg)
-        else:
-            return default
+        for i, v in enumerate(list):
+            if (isinstance(v, tuple) and arg in v) or arg == v:
+                return i
+        return default
     return index
+
+
+def escapestr(s):
+    raw_map = {8: r'\b', 7: r'\a', 12: r'\f', 10: r'\n', 13: r'\r', 9: r'\t', 11: r'\v'}
+    return r''.join(i if ord(i) > 32 else raw_map.get(ord(i), i) for i in s)
 
 
 def get_viewport_coords(artist):
     """
     Get the viewport coordinates of an artist.
     """
-    trans = artist.axes.transAxes.inverted()
-    return trans.transform(artist.get_window_extent())
+    fxy = artist.figure.get_size_inches()
+    fxy /= fxy.min()    
+    trans = artist.figure.transFigure.inverted()
+    return trans.transform(artist.get_window_extent()) * fxy[np.newaxis, :]
 
 
 def get_world_coords(artist):
@@ -47,7 +54,8 @@ def get_view(axis):
     fx, fy = axis.figure.get_size_inches()
     sx = fx / min(fx, fy)
     sy = fy / min(fx, fy)
-    return '{:.3}, {:.3}, {:.3}, {:.3}'.format(box.xmin*sx, box.ymin*sy, box.xmax*sx, box.ymax*sy)
+    c = np.array([box.xmin*sx, box.ymin*sy, box.xmax*sx, box.ymax*sy])
+    return '{:.3}, {:.3}, {:.3}, {:.3}'.format(*c)
 
 
 def get_major_ticks(dim):
@@ -71,6 +79,13 @@ agr_attr_lists = {
 }
 
 
+def get_ticklabels_on(dim):
+    def get_ticklabels(axis):
+        tl = getattr(axis, f'{dim}axis').get_ticklabels()
+        return 'off' if all([x.get_text() == '' for x in tl]) else 'on'
+    return get_ticklabels
+
+
 def get_legend(axis):
     if axis.get_legend() is not None:
         return 'on'
@@ -79,11 +94,22 @@ def get_legend(axis):
 
 
 def get_legend_position(axis):
-    return '{}, {}'.format(*get_world_coords(axis.get_legend())[[(0, 1), (0, 1)]])
+    leg = axis.get_legend()
+    if leg is not None:
+        return '{:.3f}, {:.3f}'.format(*get_viewport_coords(leg).mean(axis=0))
+    else:
+        return '0, 0'
 
 
 def get_text_position(text):
-    return '{}, {}'.format(*get_world_coords(text)[0])
+    return '{:.3f}, {:.3f}'.format(*get_viewport_coords(text)[0])
+
+
+def get_arrow_coordinates(text):
+    arrow = text.arrow_patch
+    trans = text.axes.transData.inverted()
+    xy = trans.transform(arrow.get_path().vertices[[0, 2]])
+    return '{:.3f}, {:.3f}, {:.3f}, {:.3f}'.format(*xy[0], *xy[1])
 
 
 class StaticAttribute:
@@ -118,13 +144,14 @@ class ValueAttribute(StaticAttribute):
     """
     attr_lists = {
         'linestyle': ('None', '-', ':', '--', None, '-.', None, None, None),
-        'marker': ('None', 'o', 's', 'd', '^', '<', 'v', '>', '+', 'x', '*'),
+        'marker': (('', 'None'), 'o', 's', 'd', '^', '<', 'v', '>', '+', 'x', '*'),
+        'fillstyle': ('none', 'full', ),
         'color': ['white', 'black'],
     }
 
     def _get_value(self, source, convert_latex=True):
         value = getattr(source, 'get_{}'.format(self.key))()
-        if is_string_like(value):
+        if isinstance(value, str):
             if convert_latex:
                 value = latex_to_xmgrace(value)
             else:
@@ -164,7 +191,7 @@ class ValueAttribute(StaticAttribute):
             return None
         if self.index:
             attr_list = self.attr_lists[self.index]
-            index = indexed(attr_list)(value)
+            index = indexed(attr_list)(str(value))
             if index is None:
                 try:
                     attr_list.append(value)
@@ -184,12 +211,17 @@ agr_line_attrs = [
     ValueAttribute('linewidth', 'line linewidth'),
     ValueAttribute('color', 'line color', index=True),
     ValueAttribute('marker', 'symbol', index=True),
+    ValueAttribute('fillstyle', 'symbol fill pattern', index=True),
     ValueAttribute('markeredgecolor', 'symbol color', index='color'),
     ValueAttribute('markerfacecolor', 'symbol fill color', index='color'),
     ValueAttribute('markeredgewidth', 'symbol linewidth'),
 ]
 
 agr_axis_attrs = [
+    StaticAttribute('xaxis', 'xaxis label char size 1.0'),
+    StaticAttribute('yaxis', 'yaxis label char size 1.0'),
+    StaticAttribute('xaxis', 'xaxis ticklabel char size 1.0'),
+    StaticAttribute('yaxis', 'yaxis ticklabel char size 1.0'),
     ValueAttribute('world', 'world', function=get_world),
     ValueAttribute('view', 'view', function=get_view),
     ValueAttribute('title', 'title'),
@@ -199,18 +231,39 @@ agr_axis_attrs = [
     ValueAttribute('yscale', 'yaxes scale Logarithmic', condition=lambda scale: 'log' in scale),
     ValueAttribute('xticks', 'xaxis tick major', function=get_major_ticks('x')),
     ValueAttribute('yticks', 'yaxis tick major', function=get_major_ticks('y')),
+    ValueAttribute('xticklabels', 'xaxis ticklabel', function=get_ticklabels_on('x')),
+    ValueAttribute('yticklabels', 'yaxis ticklabel', function=get_ticklabels_on('y')),
+    ValueAttribute('xlabelposition', 'xaxis label place', 
+                   function=lambda ax: 'opposite' if ax.xaxis.get_label_position() == 'top' else 'normal'),
+    ValueAttribute('xtickposition', 'xaxis ticklabel place', 
+                   function=lambda ax: 'opposite' if all([t.get_position()[1] >= 0.9 for t in ax.xaxis.get_ticklabels()]) else 'normal'),
+    ValueAttribute('ylabelposition', 'yaxis label place', 
+                   function=lambda ax: 'opposite' if ax.yaxis.get_label_position() == 'right' else 'normal'),
+    ValueAttribute('ytickposition', 'yaxis ticklabel place', 
+                   function=lambda ax: 'opposite' if all([t.get_position()[0] >= 0.9 for t in ax.yaxis.get_ticklabels()]) else 'normal'),
+#                    tax.yaxis.get_ticks_position() == 'right' else 'normal'),
     ValueAttribute('legend', 'legend', function=get_legend),
-    # StaticAttribute('legend', 'legend loctype world'),
-    # ValueAttribute('legend', 'legend', function=get_legend_position)
+    StaticAttribute('legend', 'legend loctype view'),
+    ValueAttribute('legend', 'legend', function=get_legend_position)
 ]
 
 agr_text_attrs = [
     StaticAttribute('string', 'on'),
-    StaticAttribute('string', 'loctype world'),
+    StaticAttribute('string', 'loctype view'),
+    StaticAttribute('string', 'char size 1.0'),
     ValueAttribute('position', '', function=get_text_position),
     ValueAttribute('text', 'def')
 ]
 
+agr_arrow_attrs = [
+    StaticAttribute('line', 'on'),
+    StaticAttribute('line', 'loctype world'),
+    StaticAttribute('line', 'color 1'),
+    StaticAttribute('line', 'linewidth 3'),
+    StaticAttribute('line', 'linestyle 1'),
+    StaticAttribute('line', 'arrow 2'),
+    ValueAttribute('line', '', function=get_arrow_coordinates),
+]
 
 class AgrFile:
     head = '@version 50125\n'
@@ -222,13 +275,14 @@ class AgrFile:
         self.kwargs = {**self.kwargs, **kwargs}
         content = getattr(self, part)
 
-        content += '@' + ' ' * self.indent + text.format(**self.kwargs) + '\n'
+        content += '@' + ' ' * self.indent + escapestr(text.format(**self.kwargs)) + '\n'
         setattr(self, part, content)
 
     def writedata(self, data):
         self.tail += '@target {axis}.{line}\n@type xy\n'.format(**self.kwargs)
         for x, y in data:
-            self.tail += '{} {}\n'.format(x, y)
+            if np.isfinite([x, y]).all():
+                self.tail += '{} {}\n'.format(x, y)
         self.tail += '&\n'
 
     def save(self, filename):
@@ -281,7 +335,7 @@ def export_to_agr(figure, filename, **kwargs):
     agr = AgrFile()
     # agr_attr_lists['color'] = ['white', 'black']
     # agr_colors =
-    papersize = figure.get_size_inches()*150
+    papersize = figure.get_size_inches()*120
     agr.writeline('page size {}, {}'.format(*papersize))
     for i, axis in enumerate(figure.axes):
 
@@ -306,6 +360,17 @@ def export_to_agr(figure, filename, **kwargs):
             agr.writeline('with string')
             agr.indent = 4
             process_attributes(agr_text_attrs, text, agr, 'string ', **kwargs)
+
+            # this is a text of an arrow-annotation
+            if hasattr(text, 'arrow_patch'):
+                agr.indent = 0
+                agr.writeline('with line')
+                agr.indent = 4
+                agr.writeline(f'line {agr_axis}')
+                process_attributes(agr_arrow_attrs, text, agr, 'line ', **kwargs)
+                agr.indent = 0
+                agr.writeline('line def')
+
 
     agr.indent = 0
     tudcol_rev = {}

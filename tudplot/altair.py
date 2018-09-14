@@ -1,6 +1,6 @@
 
 import altair
-from altair import Config, Color, Shape, Column, Row, Encoding, Scale, Formula, Axis
+from altair import Config, Color, Shape, Column, Row, Encoding, Scale, Axis
 from random import randint
 import os
 import logging
@@ -8,6 +8,28 @@ import logging
 import matplotlib.pyplot as plt
 
 from .tud import nominal_colors, full_colors
+
+
+
+def filter_nulltime_json(data):
+    if 'time' in data:
+        data = data[data.time > 0]
+    return altair.pipe(data, altair.to_json)
+
+altair.renderers.enable('notebook')
+altair.data_transformers.register('json_logtime', filter_nulltime_json)
+altair.data_transformers.enable('json_logtime')
+
+def my_theme(*args, **kwargs):
+    return {
+        'range': {
+            'ordinal': altair.VgScheme('viridis'),
+            'ramp': {'scheme': 'viridis'}
+        }
+    }
+
+altair.themes.register('my-theme', my_theme)
+altair.themes.enable('my-theme')
 
 
 class BaseMixin(Encoding):
@@ -18,7 +40,7 @@ class BaseMixin(Encoding):
 
 class LogMixin(BaseMixin):
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault('scale', altair.Scale(type='log'))
+        kwargs['scale'] = altair.Scale(type='log')
         super().__init__(*args, **kwargs)
 
 
@@ -51,14 +73,7 @@ class Chart(altair.Chart):
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
-        self.configure_axis(subdivide=4)
-        # self.configure(numberFormat='f')
-        self.configure_scale(
-            nominalColorRange=nominal_colors['b'],
-            sequentialColorRange=nominal_colors['b'][:2],
-            shapeRange=['circle', 'diamond', 'square', 'triangle-up', 'cross', 'triangle-down']
-        )
-
+        
     def encode(self, *args, color=None, **kwargs):
         if isinstance(color, str):
             if color.endswith(':F'):

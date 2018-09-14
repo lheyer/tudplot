@@ -7,6 +7,7 @@ from cycler import cycler
 
 from .xmgrace import export_to_agr, load_agr_data
 from .tud import tudcolors, nominal_colors, sequential_colors
+from .utils import facet_plot, CurvedText as curved_text
 
 
 def activate(scheme='b', full=False, sequential=False, cmap='blue-red', **kwargs):
@@ -22,7 +23,8 @@ def activate(scheme='b', full=False, sequential=False, cmap='blue-red', **kwargs
         sequential (opt.): Activate a number of sequential colors from a color map.
         cmap (opt.):
             Colormap to use for sequential colors, can be either from `~tudplot.tud.cmaps`
-            or any matplotlib color map.
+            or any matplotlib color map. Range of the color map values can be given as
+            cmap_min and cmap_max, respectively.
         **kwargs: Any matplotlib rc paramter may be given as keyword argument.
     """
     mpl.pyplot.style.use(os.path.join(os.path.dirname(__file__), 'tud.mplstyle'))
@@ -31,11 +33,12 @@ def activate(scheme='b', full=False, sequential=False, cmap='blue-red', **kwargs
         if isinstance(full, int):
             cmap = mpl.colors.LinearSegmentedColormap.from_list('tud{}'.format(scheme),
                                                                 tudcolors[scheme])
-            colors = cmap(numpy.linspace(0, 1, full))
+            colors = [cmap(x) for x in numpy.linspace(0, 1, full)]
         else:
             colors = tudcolors[scheme]
     elif sequential:
-        colors = sequential_colors(sequential, cmap=cmap)
+        colors = sequential_colors(sequential, cmap=cmap, min=kwargs.pop('cmap_min', 0),
+                                   max=kwargs.pop('cmap_max', 1))
     else:
         colors = nominal_colors[scheme]
 
@@ -55,12 +58,14 @@ def saveagr(filename, figure=None, convert_latex=True):
     export_to_agr(figure, filename, convert_latex=convert_latex)
 
 
-def markfigure(x, y, s, **kwargs):
-    kwargs['transform'] = pyplot.gca().transAxes
+def markfigure(x, y, s, ax=None, **kwargs):
+    if ax is None:
+        ax = pyplot.gca()
+    kwargs['transform'] = ax.transAxes
     kwargs['ha'] = 'center'
     kwargs['va'] = 'center'
-    kwargs.setdefault('fontsize', 'large')
-    pyplot.text(x, y, s, **kwargs)
+    # kwargs.setdefault('fontsize', 'large')
+    ax.text(x, y, s, **kwargs)
 
 
 def marka(x, y):

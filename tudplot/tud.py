@@ -1,3 +1,4 @@
+import re
 import matplotlib as mpl
 import numpy
 
@@ -30,9 +31,12 @@ def full_colors(N, scheme='b'):
     return ['#{:02x}{:02x}{:02x}'.format(*cmap(x, bytes=True)[:3]) for x in numpy.linspace(0, 1, N)]
 
 
-def sequential_colors(N, cmap='blue-red'):
+def sequential_colors(N, cmap='blue-red', min=0, max=1):
     if cmap in color_maps:
         cmap = mpl.colors.LinearSegmentedColormap.from_list('tud_{}'.format(cmap), color_maps[cmap])
+    elif '-' in cmap:
+        cols = [tudcolors[k] if 'tud' in k else k for k in cmap.split('-')]
+        cmap = mpl.colors.LinearSegmentedColormap.from_list(cmap, cols)
     else:
         cmap = mpl.pyplot.get_cmap(cmap)
-    return ['#{:02x}{:02x}{:02x}'.format(*cmap(x, bytes=True)[:3]) for x in numpy.linspace(0, 1, N)]
+    return ['#{:02x}{:02x}{:02x}'.format(*cmap(x, bytes=True)[:3]) for x in numpy.linspace(min, max, N)]
